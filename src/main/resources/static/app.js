@@ -36,9 +36,9 @@ var app = (function () {
         //subscribe to /topic/TOPICXX when connections succeed
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
-            stompClient.subscribe('/topic/TOPICXX', function (eventbody) {
-                
-                
+            stompClient.subscribe('/topic/newpoint', function (pt) {
+                var point=JSON.parse(pt.body);
+                addPointToCanvas(new Point(point.x,point.y));                
             });
         });
 
@@ -53,14 +53,19 @@ var app = (function () {
             
             //websocket connection
             connectAndSubscribe();
+            //add listener to canvas
+            can.addEventListener("click",function(evt){
+               var pos=getMousePosition(evt); 
+               app.publishPoint(pos.x,pos.y);
+            });
         },
 
         publishPoint: function(px,py){
             var pt=new Point(px,py);
             console.info("publishing point at "+pt);
             addPointToCanvas(pt);
-
-            //publicar el evento
+            stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
+            
         },
 
         disconnect: function () {
@@ -69,7 +74,8 @@ var app = (function () {
             }
             setConnected(false);
             console.log("Disconnected");
-        }
+        },
+        
     };
 
 })();
